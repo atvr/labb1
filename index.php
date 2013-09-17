@@ -4,6 +4,7 @@
 	include_once "src/views/HTMLPage.php";
 	include_once 'src/controllers/Authenticator.php';
 	include_once 'src/models/User.php';
+	
 	$auth = 'Authenticator';
 	$auth::CheckForLoginInfo();
 	$page = 'HTMLPage';

@@ -1,5 +1,5 @@
 <?php
-	include_once '../models/User.php';
+	
     class HTMLPage {
 		
 		public static function GetPage() {
