@@ -10,7 +10,7 @@
 					<html>
 						<head>
 							<title>$title</title>
-							<meta content=\"text/html; charset=UTF-8\" />
+							<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
 						</head>
 						<body>
 							$body
@@ -42,11 +42,11 @@
 						
 				$body .= "<legend>Logga in - Skriv ditt användarnamn och lösenord.</legend>
 							<form action='?login' method='post' enctype='multipart/form-data'>
-								<p><label for=\"username\">Användarnamn:</label>
+								<p><label>Användarnamn:</label>
 								<input type=\"text\" name=\"username\"/></p>
-								<p><label for=\"password\">Lösenord:</label>
+								<p><label>Lösenord:</label>
 								<input type=\"password\" name=\"password\"/></p>
-								<p><label for=\"stayloggedin\">Fortsätt vara inloggad:</label><input type='checkbox' name='stayloggedin' /></p>
+								<p><label>Fortsätt vara inloggad:</label><input type='checkbox' name='stayloggedin' /></p>
 								<p><input type='submit' value='Skicka'/></p>
 							</form>
 						</fieldset>";
@@ -74,6 +74,7 @@
 		private static function getLNUTimeString()
 		{
 			setlocale(LC_TIME, "sv_SE.utf8");
+			date_default_timezone_set("Europe/Stockholm");
 			$timedata = explode(" ", strftime("%A %d %B %Y %X"));
 			$nameWeekday = ucfirst($timedata[0]);
 			$numDayOfMonth = $timedata[1];

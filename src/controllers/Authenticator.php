@@ -23,8 +23,8 @@
 				self::setMsgForUser("Inloggningen lyckades. Inloggad som $username.");
 				if($_POST['stayloggedin'] != null) {
 					$expire = time()+60*60*24*3;
-					setcookie("username", $username, $expire,'/','localhost',FALSE,TRUE);
-					setcookie("password", hash("sha512",$password . $_SERVER['HTTP_USER_AGENT']), $expire,'/','localhost',FALSE,TRUE);	
+					setcookie("username", $username, $expire,'/labb1/','atvr.net',FALSE,TRUE);
+					setcookie("password", hash("sha512",$password . $_SERVER['HTTP_USER_AGENT']), $expire,'/labb1/','atvr.net',FALSE,TRUE);	
 				}
 			}
     	}
@@ -50,8 +50,8 @@
 			$_SESSION['MsgForUser'] = "Du har loggats ut.";
 			if(count($_COOKIE) > 1) {
 				$expire = time()-3600;
-				setcookie("username", "", $expire,'/','localhost',FALSE,TRUE);
-				setcookie("password", "", $expire,'/','localhost',FALSE,TRUE);
+				setcookie("username", "", $expire,'/labb1/','atvr.net',FALSE,TRUE);
+				setcookie("password", "", $expire,'/labb1/','atvr.net',FALSE,TRUE);
 				}
 		}
 		
