@@ -137,7 +137,6 @@
 			$nameMonth = ucfirst($timedata[2]);
 			$numYear = $timedata[3];
 			$numTimeOfDay = $timedata[4];
-			//return $nameWeekday . ", den " . $numDayOfMonth . " " . $nameMonth . " år " . $numYear . ". Klockan är [" . $numTimeOfDay . "].";
 			return "$nameWeekday, den $numDayOfMonth $nameMonth, år $numYear. Klockan är [$numTimeOfDay].";
 		}
 		
