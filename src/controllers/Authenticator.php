@@ -1,86 +1,92 @@
 <?php
-    class Authenticator {
-    	public static function Login() {
-    		if($_POST['username'] == null) {
-    			self::setMsgForUser("Inloggning misslyckades. Användarnamn saknas.");
-				return;
-    		}
-			elseif ($_POST['password'] == null) {
-				self::setMsgForUser("Inloggning misslyckades. Lösenord saknas.");
-				return;
-			}	
-			$username = $_POST['username'];
-			$password = $_POST['password'];
+	/*include_once "../views/HTMLPage.php";
+	include_once "../models/User.php";*/
+	include_once "src/views/HTMLPage.php";
+	include_once "src/models/User.php"; //??? Varför funkar det senare och inte det första? Den relativa sökvägen borde vara den rätta.
+	include_once "src/models/MysqlConnectionDetails.php";
+	include_once "src/controllers/LoginValidator.php";
+	
+	class Authenticator {
+		// @var HTMLPage Huvudvyn för applikationen.
+		private $mainView; 
+		//@var LoginValidator Valideringskontroll för att kolla användare mot databas.
+		private $loginValidator;
+		
+		function __construct(HTMLPage $htmlPage, MysqlConnectionDetails $conDetails) {
+			$this->mainView = $htmlPage;
+			$this->loginValidator = new LoginValidator($conDetails);
+		}
+		
+		//Kollar skickade uppgifter och loggar in en användare.
+	    	public function Login() {
+	    		$username = $this->mainView->GetUsername();
+			$password = $this->mainView->GetPassword();
 			
+	    		if($username == null) {
+	    			$this->mainView->SetMsgForUser("Inloggning misslyckades. Användarnamn saknas.");
+					return;
+	    		}
+				elseif ($password == null) {
+					$this->mainView->SetMsgForUser("Inloggning misslyckades. Lösenord saknas.");
+					return;
+				}
+
+	    		if(!$this->loginValidator->IsUserValid($username, $password)) {
+	    			$this->mainView->SetMsgForUser("Inloggningen misslyckades. Felaktigt användarnamn eller lösenord.");
+	    		}
+				else {
+					$user = new User($username, $this->mainView->GetUserAgent());
+					$this->mainView->SetLoggedInUser($user);
+					$this->mainView->SetMsgForUser("Inloggningen lyckades. Inloggad som $username.");
+					if($this->mainView->UserClickedStayLoggedIn()) {
+						$password = $this->loginValidator->MakeHash($password);
+						$hashed = $this->loginValidator->MakeHash($password . $this->mainView->GetUserAgent());
+						$expire = time()+60*60*24*3;
+						$this->mainView->SetLoginCookie($username, $hashed, $expire);
+						$this->loginValidator->AddCookie($username, $expire);
+					}
+				}
+	    	}
+			//Kollar cookie och loggar in användare.
+			public function LoginWithCookie() {
+				$cookieUsername = $this->mainView->GetUsernameFromCookie();
+				$cookiePassword = $this->mainView->GetPasswordFromCookie();
+				//Försvårar inloggning genom stöld av cookies genom att tvinga den obehörige att använda samma useragent.	
+				$userAgent = $this->mainView->GetUserAgent();
+				$authenticated = $this->loginValidator->IsCookieValid($cookieUsername, $cookiePassword, $userAgent);
+				if($authenticated) {
+					$user = new User($cookieUsername, $userAgent);
+					$this->mainView->SetLoggedInUser($user);
+					$this->mainView->SetMsgForUser("Inloggning lyckades via cookies.");
+				}
+			}
 			
-    		if($username != "Admin" || $password != "Password") {
-    			self::setMsgForUser("Inloggningen misslyckades. Felaktigt användarnamn eller lösenord.");
-    		}
-			else {
-				session_start();
-				$user = new User($username);
-				$_SESSION['LoggedInUser'] = $user;
-				self::setMsgForUser("Inloggningen lyckades. Inloggad som $username.");
-				if($_POST['stayloggedin'] != null) {
-					$expire = time()+60*60*24*3;
-					setcookie("username", $username, $expire,'/labb1/','atvr.net',FALSE,TRUE);
-					setcookie("password", hash("sha512",$password . $_SERVER['HTTP_USER_AGENT']), $expire,'/labb1/','atvr.net',FALSE,TRUE);	
+			// Kör igång kontrollen och kollar loginstatus och eventuell postad info.
+			public function Run() {
+				if(!$this->mainView->IsUserLoggedIn()) {
+					//Logga in med kaka
+					if($this->mainView->DoesUserWantToLoginWithCookie()) {
+						$this->LoginWithCookie();
+					}
+					//Logga in
+					if($this->mainView->DoesUserWantToLogin()) {
+						$this->Login();
+					}
+				}
+				//Logga ut
+				elseif($this->mainView->DoesUserWantToLogout()) {
+						$this->mainView->Logout();
+						return;
+				}
+				//Försvåra obehörigs användning av sessionskakan.
+				$user = $this->mainView->GetUser();
+				if($user != null) {
+					$agent = $user->UserAgent;
+					if($this->mainView->GetUserAgent() != $agent) {
+						$this->mainView->Logout();
+					}
 				}
 			}
-    	}
-		
-		public static function LoginCookie() {
-			$cookieUsername = $_COOKIE['username'];
-			$cookiePassword = $_COOKIE['password'];
-			//Försvårar inloggning genom stöld av cookies genom att tvinga den obehörige att använda samma useragent.
-			if($cookieUsername == "Admin" && $cookiePassword == hash("sha512","Password" . $_SERVER['HTTP_USER_AGENT'])) {
-				$user = new User($cookieUsername);
-				$_SESSION['LoggedInUser'] = $user;
-			}
-		}
-		
-		
-		private static function setMsgForUser($msg) {
-			session_start();
-			$_SESSION["MsgForUser"] = $msg;
-		}
-		
-		public static function Logout() {
-			$_SESSION['LoggedInUser'] = null;
-			$_SESSION['MsgForUser'] = "Du har loggats ut.";
-			if(count($_COOKIE) > 1) {
-				$expire = time()-3600;
-				setcookie("username", "", $expire,'/labb1/','atvr.net',FALSE,TRUE);
-				setcookie("password", "", $expire,'/labb1/','atvr.net',FALSE,TRUE);
-				}
-		}
-		
-		/*Hade ursprungligen denna kod i index.php, men tyckte det var dålig/obefintlig enkapsulering och flyttade
-		den därför hit. Nackdel med att köra den här är att det alltid skapas ett Authenticator object. Vilket är
-		att föredra? Ingetdera kanske, men feedback uppskattas.*/
-		public static function CheckForLoginInfo() {
-			session_start();
-			//Logga in med kaka
-			if($_SESSION['LoggedInUser'] == null && $_COOKIE['username'] != null && $_COOKIE['password'] != null) {
-				self::LoginCookie();
-			}
-			//Logga in
-			if($_SERVER['QUERY_STRING'] == "login" && $_SESSION['LoggedInUser'] == null) {
-				self::Login();
-			}
-			//Logga ut
-			elseif($_SERVER['QUERY_STRING'] == "logout" && $_SESSION['LoggedInUser'] != null) {
-				self::Logout();
-			}
-			//Försvåra obehörigs användning av sessionskakan.
-			if($_SESSION['LoggedInUser'] != null) {
-				$user = $_SESSION['LoggedInUser'];
-				$agent = $user->UserAgent;
-				if($_SERVER['HTTP_USER_AGENT'] != $agent) {
-					$_SESSION['LoggedInUser'] = null;
-				}
-			}
-		}	
-    }
+	    }
 	
 ?>
