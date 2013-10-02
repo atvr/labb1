@@ -1,3 +1,3 @@
-labb1
+labb1 och labb2
 =====
-Min labb 1 för kursen Webbutveckling med PHP (1DV408).
+Mina labbar 1 och 2 för kursen Webbutveckling med PHP (1DV408).
